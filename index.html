@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THIS OR THAT</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: linear-gradient(135deg,#17132c,#43236b);
+  font-family: Arial,sans-serif;
+  color: white;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  background: #211c38;
+  border-radius: 24px;
+  padding: 25px 18px;
+  text-align: center;
+  box-shadow: 0 10px 40px #0007;
+}
+
+h1 {
+  color: #c6a0ff;
+  font-size: 34px;
+}
+
+h2 { font-size: 25px; }
+
+p { color: #d4c9e8; }
+
+button {
+  border: none;
+  border-radius: 13px;
+  padding: 16px;
+  margin: 7px;
+  font-size: 17px;
+  font-weight: bold;
+  color: white;
+  background: #8955d2;
+  cursor: pointer;
+}
+
+button:hover { background: #a778ed; }
+
+.option {
+  width: 44%;
+  min-height: 115px;
+  font-size: 19px;
+  background: #443465;
+}
+
+input {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: none;
+  margin: 12px 0;
+  font-size: 17px;
+}
+
+.hidden { display: none !important; }
+
+video, #preview {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 18px;
+  margin: 12px auto;
+}
+
+#progress {
+  height: 9px;
+  background: #51446b;
+  border-radius: 20px;
+  margin: 20px 0;
+}
+
+#bar {
+  height: 100%;
+  width: 0%;
+  background: #bd91ff;
+  border-radius: 20px;
+}
+
+.loader {
+  width: 55px;
+  height: 55px;
+  border: 6px solid #51446b;
+  border-top: 6px solid #bd91ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 25px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- VÝBĚR POČTU -->
+<section id="start">
+  <h1>THIS OR THAT</h1>
+  <p>Vyber si počet otázek</p>
+
+  <button onclick="chooseCount(25)">25 otázek</button>
+  <button onclick="chooseCount(50)">50 otázek</button>
+  <button onclick="chooseCount(75)">75 otázek</button>
+  <button onclick="chooseCount(100)">100 otázek</button>
+</section>
+
+<!-- FOTOAPARÁT -->
+<section id="photo" class="hidden">
+  <h1>📸 Vyfoť se!</h1>
+  <p>Zapni fotoaparát a vyfoť se.</p>
+
+  <video id="camera" autoplay playsinline></video>
+
+  <br>
+  <button onclick="takePhoto()">📸 Vyfotit se</button>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <img id="preview" class="hidden">
+
+  <br>
+  <button onclick="goToName()">Pokračovat</button>
+</section>
+
+<!-- JMÉNO -->
+<section id="name" class="hidden">
+  <h1>Jak se jmenuješ?</h1>
+  <input id="username" placeholder="Tvoje jméno" maxlength="50">
+  <button onclick="startQuiz()">Pokračovat</button>
+</section>
+
+<!-- OTÁZKY -->
+<section id="quiz" class="hidden">
+  <h1>THIS OR THAT</h1>
+
+  <p id="number"></p>
+
+  <div id="progress">
+    <div id="bar"></div>
+  </div>
+
+  <h2 id="question">Co preferuješ?</h2>
+
+  <button class="option" id="answer1"
+    onclick="answer(0)"></button>
+
+  <button class="option" id="answer2"
+    onclick="answer(1)"></button>
+</section>
+
+<!-- ODESÍLÁNÍ -->
+<section id="sending" class="hidden">
+  <h1>Vaše odpovědi se zpracovávají</h1>
+  <div class="loader"></div>
+  <p>Odesílání vašich odpovědí...</p>
+</section>
+
+<!-- HOTOVO -->
+<section id="done" class="hidden">
+  <h1>✅ Hotovo!</h1>
+  <h2>Vaše odpovědi byly úspěšně odeslány!</h2>
+  <p>Děkujeme za vyplnění!</p>
+  <button onclick="location.reload()">Nové vyplnění</button>
+</section>
+
+</div>
+
+<script>
+
+const questions = [
+  ["Pizza 🍕","Burger 🍔"],
+  ["Pes 🐶","Kočka 🐱"],
+  ["Léto ☀️","Zima ❄️"],
+  ["TikTok","Instagram"],
+  ["Sladké 🍫","Slané 🍟"],
+  ["Moře 🌊","Hory ⛰️"],
+  ["iPhone 📱","Samsung 📱"],
+  ["Film 🎬","Seriál 📺"],
+  ["Den ☀️","Noc 🌙"],
+  ["Čaj 🍵","Káva ☕"],
+  ["Nike","Adidas"],
+  ["Škola 🏫","Prázdniny 🏖️"],
+  ["Plavání 🏊","Běh 🏃"],
+  ["McDonald's","KFC"],
+  ["Auto 🚗","Motorka 🏍️"],
+  ["YouTube","Netflix"],
+  ["Čokoláda 🍫","Bonbóny 🍬"],
+  ["Fotbal ⚽","Hokej 🏒"],
+  ["Město 🌆","Vesnice 🌳"],
+  ["Ráno 🌅","Večer 🌃"],
+  ["Hudba 🎵","Podcast 🎧"],
+  ["Modrá 💙","Růžová 🩷"],
+  ["Letadlo ✈️","Vlak 🚆"],
+  ["Snapchat","TikTok"],
+  ["Bazén 🏊","Aquapark 🎢"],
+  ["Tanec 💃","Zpěv 🎤"],
+  ["Hranolky 🍟","Pizza 🍕"],
+  ["Adrenalin 🎢","Klid 🧘"],
+  ["Hraní her 🎮","Sledování filmů 🎬"],
+  ["Android","iOS"]
+];
+
+// PRVNÍ OTÁZKA JE VŽDY STEJNÁ
+const firstQuestion = ["Vodka 🥃","Slivovice 🍶"];
+
+let selectedCount = 0;
+let current = 0;
+let quizQuestions = [];
+let answers = [];
+let photoData = "";
+let cameraStream = null;
+
+function show(id) {
+  document.querySelectorAll("section").forEach(s =>
+    s.classList.add("hidden")
+  );
+  document.getElementById(id).classList.remove("hidden");
+}
+
+// VÝBĚR POČTU A OTEVŘENÍ FOTOAPARÁTU
+async function chooseCount(count) {
+  selectedCount = count;
+  show("photo");
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: false
+    });
+
+    document.getElementById("camera").srcObject = cameraStream;
+
+  } catch (error) {
+    alert("Povol přístup k fotoaparátu. Stránka musí běžet přes HTTPS nebo localhost.");
+  }
+}
+
+// VYFOCENÍ
+function takePhoto() {
+  const video = document.getElementById("camera");
+  const canvas = document.getElementById("canvas");
+
+  if (!video.videoWidth) {
+    alert("Fotoaparát ještě není připraven.");
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  canvas.getContext("2d").drawImage(
+    video,0,0,canvas.width,canvas.height
+  );
+
+  photoData = canvas.toDataURL("image/jpeg",0.8);
+
+  document.getElementById("preview").src = photoData;
+  document.getElementById("preview").classList.remove("hidden");
+  video.classList.add("hidden");
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+}
+
+// POKRAČOVÁNÍ KE JMÉNU
+function goToName() {
+  if (!photoData) {
+    alert("Nejdříve se vyfoť!");
+    return;
+  }
+
+  show("name");
+}
+
+// ZAČÁTEK OTÁZEK
+function startQuiz() {
+  const name = document.getElementById("username").value.trim();
+
+  if (!name) {
+    alert("Napiš své jméno!");
+    return;
+  }
+
+  current = 0;
+  answers = [];
+
+  // Náhodné pořadí dalších otázek.
+  const shuffled = [...questions].sort(() => Math.random() - 0.5);
+
+  quizQuestions = [
+    firstQuestion,
+    ...shuffled.slice(0, selectedCount - 1)
+  ];
+
+  show("quiz");
+  displayQuestion();
+}
+
+// ZOBRAZENÍ OTÁZKY
+function displayQuestion() {
+  const q = quizQuestions[current];
+
+  document.getElementById("number").textContent =
+    "Otázka " + (current + 1) + " / " + selectedCount;
+
+  document.getElementById("answer1").textContent = q[0];
+  document.getElementById("answer2").textContent = q[1];
+
+  document.getElementById("bar").style.width =
+    (current / selectedCount * 100) + "%";
+}
+
+// VÝBĚR ODPOVĚDI
+function answer(choice) {
+  answers.push({
+    question: quizQuestions[current].join(" nebo "),
+    answer: quizQuestions[current][choice]
+  });
+
+  current++;
+
+  if (current >= selectedCount) {
+    finish();
+  } else {
+    displayQuestion();
+  }
+}
+
+// KONEC
+function finish() {
+  show("sending");
+
+  setTimeout(() => {
+    show("done");
+
+    console.log({
+      name: document.getElementById("username").value,
+      photo: photoData,
+      answers: answers
+    });
+
+  },3000);
+}
+
+</script>
+
+</body>
+</html>
